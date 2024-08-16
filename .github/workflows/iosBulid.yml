@@ -8,54 +8,55 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
 
-    - name: Install dependencies
-      run: yarn install
+      - name: Install dependencies
+        run: yarn install
 
-    - name: Install Pods
-      run: |
-        cd ios
-        pod install
+      - name: Install Pods
+        run: |
+          cd ios
+          pod install
 
-    - name: Set up Xcode
-      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Set up Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-    - name: Increment build number
-      run: |
-        cd ios
-        agvtool new-version -all $(($(agvtool what-version -terse) + 1))
+      - name: Increment build number
+        run: |
+          cd ios
+          agvtool new-version -all $(($(agvtool what-version -terse) + 1))
 
-    - name: Build iOS App
-      env:
-        XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
-        XCODE_SCHEME: AwesomeProject
-        CONFIGURATION: Release
-      run: |
-        xcodebuild \
-          -workspace $XCODE_WORKSPACE \
-          -scheme $XCODE_SCHEME \
-          -configuration $CONFIGURATION \
-          -sdk iphoneos \
-          -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
-          clean archive
-           -allowProvisioningUpdates
+      - name: Build iOS App
+        env:
+          XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
+          XCODE_SCHEME: AwesomeProject
+          CONFIGURATION: Release
+          # run: |
+          #   xcodebuild \
+          #     -workspace $XCODE_WORKSPACE \
+          #     -scheme $XCODE_SCHEME \
+          #     -configuration $CONFIGURATION \
+          #     -sdk iphoneos \
+          #     -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
+          #     clean archive
+          #      -allowProvisioningUpdates
+          run: xcodebuild -workspace ios/AwesomeProject.xcworkspace -scheme AwesomeProject -sdk iphoneos -configuration AppStoreDistribution archive -archivePath ${{ github.workspace }}/build/AwesomeProject.xcarchive -allowProvisioningUpdates
 
-    - name: Export iOS App
-      run: |
-        xcodebuild -exportArchive \
-          -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
-          -exportOptionsPlist ios/exportOptions.plist \
-          -exportPath $PWD/build/AwesomeProject
+      - name: Export iOS App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath $PWD/build/AwesomeProject
 
-    - name: Upload iOS Build
-      uses: actions/upload-artifact@v4
-      with:
-        name: iOS App Build
-        path: build/AwesomeProject/*.ipa
+      - name: Upload iOS Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS App Build
+          path: build/AwesomeProject/*.ipa
