@@ -2,6 +2,8 @@ name: Build iOS App
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -34,8 +36,8 @@ jobs:
 
     - name: Build iOS App
       env:
-        XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
-        XCODE_SCHEME: AwesomeProject
+        XCODE_WORKSPACE: ios/YourAppName.xcworkspace
+        XCODE_SCHEME: YourAppName
         CONFIGURATION: Release
       run: |
         xcodebuild \
@@ -44,16 +46,17 @@ jobs:
           -configuration $CONFIGURATION \
           -sdk iphoneos \
           -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
+          clean archive
 
     - name: Export iOS App
       run: |
         xcodebuild -exportArchive \
-          -archivePath $PWD/build/AwesomeProject.xcarchive \
+          -archivePath $PWD/build/YourAppName.xcarchive \
           -exportOptionsPlist ios/exportOptions.plist \
-          -exportPath $PWD/build/AwesomeProject
+          -exportPath $PWD/build/YourAppName
 
     - name: Upload iOS Build
       uses: actions/upload-artifact@v4
       with:
         name: iOS App Build
-        path: build/AwesomeProject/*.ipa
+        path: build/YourAppName/*.ipa
