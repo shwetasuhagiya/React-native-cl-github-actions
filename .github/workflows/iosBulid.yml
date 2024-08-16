@@ -45,6 +45,7 @@ jobs:
           -sdk iphoneos \
           -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
           clean archive
+           -allowProvisioningUpdates
 
     - name: Export iOS App
       run: |
