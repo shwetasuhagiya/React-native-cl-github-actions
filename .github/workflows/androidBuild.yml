@@ -1,8 +1,5 @@
 name: Build android app 
 
-env: 
-   main_project_module: ReactNativeCI
-
 on: 
   push:
 
