@@ -32,20 +32,31 @@ jobs:
         cd ios
         agvtool new-version -all $(($(agvtool what-version -terse) + 1))
 
-    - name: Build iOS App
-      env:
-        XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
-        XCODE_SCHEME: AwesomeProject
-        CONFIGURATION: Release
-      run: |
-        xcodebuild \
-          -workspace $XCODE_WORKSPACE \
-          -scheme $XCODE_SCHEME \
-          -configuration $CONFIGURATION \
-          -sdk iphoneos \
-          -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
-          clean archive
-           -allowProvisioningUpdates
+    # - name: Build iOS App
+    #   env:
+    #     XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
+    #     XCODE_SCHEME: AwesomeProject
+    #     CONFIGURATION: Release
+    #   run: |
+    #     xcodebuild \
+    #       -workspace $XCODE_WORKSPACE \
+    #       -scheme $XCODE_SCHEME \
+    #       -configuration $CONFIGURATION \
+    #       -sdk iphoneos \
+    #       -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
+    #       clean archive
+    #        -allowProvisioningUpdates
+
+    name: Build iOS (Release)
+        uses: yukiarrr/ios-build-action@v1.5.0
+        with:
+          project-path: ios/AwesomeProject.xcodeproj
+          p12-base64: ${{ secrets.P12_BASE64 }}
+          mobileprovision-base64: ${{ secrets.MOBILEPROVISION_BASE64 }}
+          code-signing-identity: "Apple Distribution"
+          certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}
+          team-id: ${{ secrets.IOS_TEAM_ID }}
+          output-path: "AwesomeProject.ipa"
 
     - name: Export iOS App
       run: |
