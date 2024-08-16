@@ -2,8 +2,6 @@ name: Build iOS App
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   build:
@@ -45,8 +43,6 @@ jobs:
           -scheme $XCODE_SCHEME \
           -configuration $CONFIGURATION \
           -sdk iphoneos \
-          -archivePath $PWD/build/$XCODE_SCHEME.xcarchive \
-          clean archive
 
     - name: Export iOS App
       run: |
