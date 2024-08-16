@@ -1,81 +1,68 @@
-# name: Build android app 
+name: Build android app 
 
-# env: 
-#    main_project_module: ReactNativeCI
-
-# on: 
-#   push:
-#   branches: 'master'
-
-# jobs: 
-#     build-android:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v3
-
-#     - name: Set current date as env variable
-#       uses: echo "date_today=$(date + '%y-%m-%d')" >> $GITHUB_ENV
-
-#     - name: Set repository name as env variable
-#       uses: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV)
-
-#     - name: Set current date as env variable
-#       uses: echo "date_today=$(date + '%y-%m-%d')" >> $GITHUB_ENV
-
-#     - name: Setup JDK
-#       uses: actions/setup-java@v3 
-#       with: 
-#         distribution: 'zulu'
-#         java-version: 11
-
-name: "Android Build"
+env: 
+   main_project_module: ReactNativeCI
 
 on: 
-   push:
-   branches: 'master'
+  push:
 
-jobs:
-  build-android:
+jobs: 
+    build-android:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Use Node.js 14
-        uses: actions/setup-node@v3
-        with:
-          node-version: 14
-          cache: "yarn"
+    - name: Set current date as env variable
+      uses: echo "date_today=$(date + '%y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Install Node modules
-        run: yarn ci
+    - name: Set repository name as env variable
+      uses: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV)
 
-      - name: Cache Gradle Wrapper
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+    - name: Set current date as env variable
+      uses: echo "date_today=$(date + '%y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Cache Gradle Dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-caches-
-      - name: Make Gradlew Executable
-        run: cd android && chmod +x ./gradlew
-        # Build Command
+    - name: Setup JDK
+      uses: actions/setup-java@v3 
+      with: 
+        distribution: 'zulu'
+        java-version: 11
 
-      - name: Build Android ${{inputs.environment == 'release' && 'Release' || 'Debug'}}
-        run: |
-          cd android && ./gradlew bundle${{inputs.environment == 'release' && 'Release' || 'Debug'}} --no-daemon
-      # Upload to Artifact
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: BidArtProject.aab
-          path: "android/app/build/outputs/bundle/release/app-release.aab"
+    - name: Setup Node
+      uses: actions/setup-node@v3 
+      with: 
+        node-version: 16.x
+
+     - name: Setup dependencies
+       uses: yarn install
+
+    - name: Setup android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Build Android APK
+      run: |
+          cd android
+          ./gradlew assembleRelease
+
+    - name: Build Android AAB
+      run: |
+          cd android
+          ./gradlew bundleRelease
+
+    - name: Upload APK Release - ${{ env.repository_name }}
+      uses: actions/upload-artifact@v3
+      with: 
+        name: ${{ env.date_today }} - ${{ env.repository_name }} - APK(s) release generated
+        path: android/app/build/outputs/apk/release/
+      
+    - name: Upload AAB (App Bundle) Release - ${{ env.repository_name }}
+      uses: actions/upload-artifact@v3
+      with: 
+        name: ${{ env.date_today }} - ${{ env.repository_name }} - App bundle(s) release generated
+        path: android/app/build/outputs/bundle/release/
+    
+
+
 
        
