@@ -1,4 +1,4 @@
-name: Build iOS App
+name: Build and Test
 
 on:
   push:
@@ -6,53 +6,50 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
+      - name: Set up Ruby
+        uses: actions/setup-ruby@v1
 
-    - name: Install dependencies
-      run: yarn install
+      - name: Install dependencies
+        run: bundle install
 
-    - name: Install Pods
-      run: |
-        cd ios
-        pod install
+      - name: Install CocoaPods
+        run: pod install
+        working-directory: ios
 
-    - name: Set up Xcode
-      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Set up Signing Certificate
+        run: |
+          echo "${{ secrets.SIGNING_CERTIFICATE }}" | base64 --decode > cert.p12
+          security create-keychain -p "password" build.keychain
+          security import cert.p12 -t agg -k ~/Library/Keychains/build.keychain -P "password" -A
+          security list-keychains -d user -s ~/Library/Keychains/build.keychain
+          security unlock-keychain -p "password" ~/Library/Keychains/build.keychain
+          security set-keychain-settings -t 3600 -u ~/Library/Keychains/build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "password" ~/Library/Keychains/build.keychain
+        env:
+          SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
 
-    - name: Increment build number
-      run: |
-        cd ios
-        agvtool new-version -all $(($(agvtool what-version -terse) + 1))
-
-    - name: Build iOS App
-      env:
-        XCODE_WORKSPACE: ios/AwesomeProject.xcworkspace
-        XCODE_SCHEME: AwesomeProject
-        CONFIGURATION: Release
-      run: |
-        xcodebuild \
-          -workspace $XCODE_WORKSPACE \
-          -scheme $XCODE_SCHEME \
-          -configuration $CONFIGURATION \
+      - name: Build and Archive
+        run: |
+          xcodebuild -workspace ios/AwesomeProject.xcworkspace \
+          -scheme AwesomeProject \
           -sdk iphoneos \
-
-    - name: Export iOS App
-      run: |
-        xcodebuild -exportArchive \
+          -configuration Release \
           -archivePath $PWD/build/AwesomeProject.xcarchive \
-          -exportOptionsPlist ios/exportOptions.plist \
-          -exportPath $PWD/build/AwesomeProject
+          clean archive \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=${{ secrets.DEVELOPMENT_TEAM }} \
+          PROVISIONING_PROFILE_SPECIFIER=""
 
-    - name: Upload iOS Build
-      uses: actions/upload-artifact@v4
-      with:
-        name: iOS App Build
-        path: build/AwesomeProject/*.ipa
+      - name: Export Archive
+        run: |
+          xcodebuild -exportArchive \
+          -archivePath $PWD/build/AwesomeProject.xcarchive \
+          -exportOptionsPlist ios/ExportOptions.plist \
+          -exportPath $PWD/build \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=${{ secrets.DEVELOPMENT_TEAM }} \
+          PROVISIONING_PROFILE_SPECIFIER=""
